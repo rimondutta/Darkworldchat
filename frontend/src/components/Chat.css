@@ -1,0 +1,153 @@
+/* Custom chat styles for consistent messaging layout */
+
+/* Base message container */
+.message-container {
+  /* display: flex; */
+  margin-bottom: 16px;
+  max-width: 100%;
+}
+
+/* Message alignment */
+.message-right {
+  justify-content: flex-end;
+}
+
+.message-left {
+  justify-content: flex-start;
+}
+
+/* Avatar styling */
+.avatar-container {
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+.avatar-image {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.avatar-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Message content */
+.message-content {
+  display: flex;
+  flex-direction: column;
+  max-width: 70%;
+}
+
+/* Message header with username and time */
+.message-header {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+
+/* Message bubble */
+.message-bubble {
+  border-radius: 12px;
+  padding: 8px 12px;
+  width: auto;
+  word-break: break-word;
+}
+
+.sender-bubble {
+  background-color: var(--primary);
+  color: var(--primary-content);
+}
+
+.receiver-bubble {
+  background-color: var(--base-200);
+}
+
+/* Message image */
+.message-image {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+/* Reactions and actions */
+.message-actions {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.reaction-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.reaction-button:hover {
+  opacity: 1;
+}
+
+/* Date separator */
+.date-separator {
+  display: flex;
+  align-items: center;
+  margin: 16px 0;
+  text-align: center;
+}
+
+.date-separator-text {
+  font-size: 0.75rem;
+  opacity: 0.5;
+  margin: 0 16px;
+}
+
+.date-separator::before,
+.date-separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+}
+
+/* Message status ticks (single/double/read) */
+
+.message-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px; /* tighten gap between ticks */
+  margin-left: 8px;
+}
+
+.tick {
+  width: 14px;
+  height: 14px;
+  color: rgba(102, 102, 102, 1); /* neutral grey for delivered/unseen */
+}
+
+/* Pull the second tick slightly left so two ticks appear close/overlapped like WhatsApp */
+.tick + .tick {
+  margin-left: -4px;
+}
+
+.sender-bubble + .message-actions ~ .message-status .tick,
+.message-header .tick {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* For read (green) state */
+.tick.read {
+  color: #22c55e; /* green-500 */
+}
+
+/* When showing ticks on light backgrounds (receiver), make ticks darker */
+.receiver-bubble ~ .message-actions ~ .message-status .tick,
+.receiver-bubble + .message-actions ~ .message-status .tick {
+  color: rgba(0, 0, 0, 0.6);
+}

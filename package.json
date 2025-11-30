@@ -1,0 +1,21 @@
+{
+  "name": "chatapp",
+  "version": "1.0.0",
+  "description": "A real-time chat app built with the MERN Stack, Socket.io, TailwindCSS, DaisyUI, and Zustand, featuring JWT authentication, online presence indicators, and a sleek, responsive UI.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ../",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run dev",
+    "start": "concurrently -n \"Backend,Frontend\" -c \"blue,yellow\" \"npm run start:backend\" \"npm run start:frontend\"",
+    "dev": "concurrently -n \"Backend,Frontend\" -c \"blue,yellow\" \"npm start:backend\" \"npm start:frontend\"",
+    "prettier:check": "prettier --check 'backend/src/**/*.{js,ts,json,css,md}' 'frontend/src/**/*.{jsx,tsx,js,ts,json,css,md}'",
+    "prettier:write": "prettier --write 'backend/src/**/*.{js,ts,json,css,md}' 'frontend/src/**/*.{jsx,tsx,js,ts,json,css,md}'"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prettier": "^3.6.2"
+  }
+}

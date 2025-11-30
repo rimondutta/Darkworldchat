@@ -1,0 +1,118 @@
+.voice-recorder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: var(--primary-content);
+  color: var(--primary);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  width: 100%;
+}
+
+.voice-recorder.recording {
+  background-color: rgba(255, 0, 0, 0.1);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+  }
+}
+
+.timer {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.wave-container {
+  flex: 1;
+  height: 40px;
+  margin: 0 8px;
+  display: flex;
+  align-items: center;
+}
+
+.wave {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
+.wave-bar {
+  background-color: var(--primary);
+  width: 3px;
+  border-radius: 1px;
+  margin: 0 2px;
+  transition: height 0.1s ease;
+}
+
+/* Voice Message Player */
+.voice-player {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 300px;
+  background-color: var(--base-200);
+  border-radius: 8px;
+  padding: 8px;
+  position: relative;
+}
+
+.voice-player-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.voice-player-progress {
+  flex: 1;
+  height: 4px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  position: relative;
+  cursor: pointer;
+}
+
+.voice-player-progress-bar {
+  height: 100%;
+  background-color: var(--primary);
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+.voice-player-waveform {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  width: 100%;
+  margin-top: 8px;
+  gap: 1px;
+}
+
+.waveform-bar {
+  flex: 1;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 1px;
+  transition: background-color 0.2s;
+}
+
+.waveform-bar.active {
+  background-color: var(--primary);
+}
+
+.voice-player-time {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 4px;
+  text-align: right;
+}
