@@ -7,7 +7,7 @@ import { verifyGoogleToken } from '../lib/google.js';
 import bcryptjs from 'bcryptjs';
 import cloudinary from '../lib/cloudinary.js';
 
-// SIGNUP - Send OTP
+// ---------------- SIGNUP ----------------
 export const signup = async (req, res) => {
   const { fullName, email, password, publicKey } = req.body;
 
@@ -21,27 +21,13 @@ export const signup = async (req, res) => {
     }
 
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email already exists' });
-    }
+    if (existingUser) return res.status(400).json({ message: 'Email already exists' });
 
-    // Generate OTP
     const otp = generateOTP();
-
-    // Save OTP to database
     await OTP.findOneAndUpdate({ email }, { email, otp }, { upsert: true });
-
-    // Send OTP email
-    console.log("OTP Send");
     await sendOTPEmail(email, otp);
-    console.log("OTP Sending Done");
 
-    // Create unverified user with hashed password
-    const salt = await bcryptjs.genSalt(10);
-    const hashedPassword = await bcryptjs.hash(password, salt);
-
-    console.log("new user");
-
+    const hashedPassword = await bcryptjs.hash(password, 10);
     const newUser = new User({
       fullName,
       email,
@@ -52,31 +38,27 @@ export const signup = async (req, res) => {
     });
 
     await newUser.save();
-    console.log("User Add");
-
     res.status(200).json({ message: 'OTP sent to email', email });
   } catch (error) {
-    console.log('Error in signup controller', error.message);
+    console.error('Signup error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-// VERIFY OTP
+// ---------------- VERIFY OTP ----------------
 export const verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
 
   try {
     const otpRecord = await OTP.findOne({ email });
     if (!otpRecord) return res.status(400).json({ message: 'OTP expired or not found' });
-
     if (otpRecord.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
 
     const user = await User.findOneAndUpdate({ email }, { isVerified: true }, { new: true });
     if (!user) return res.status(400).json({ message: 'User not found' });
 
     await OTP.deleteOne({ email });
-
-    generateToken(user._id, res); // set JWT cookie
+    generateToken(user._id, res);
 
     res.status(200).json({
       _id: user._id,
@@ -87,12 +69,12 @@ export const verifyOTP = async (req, res) => {
       isVerified: user.isVerified,
     });
   } catch (error) {
-    console.log('Error in verifyOTP controller', error.message);
+    console.error('VerifyOTP error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-// RESEND OTP
+// ---------------- RESEND OTP ----------------
 export const resendOTP = async (req, res) => {
   const { email } = req.body;
 
@@ -102,17 +84,16 @@ export const resendOTP = async (req, res) => {
 
     const otp = generateOTP();
     await OTP.findOneAndUpdate({ email }, { email, otp }, { upsert: true });
-
     await sendOTPEmail(email, otp);
 
     res.status(200).json({ message: 'OTP resent' });
   } catch (error) {
-    console.log('Error in resendOTP controller', error.message);
+    console.error('ResendOTP error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-// GOOGLE CHECK
+// ---------------- GOOGLE CHECK ----------------
 export const googleCheck = async (req, res) => {
   const { token } = req.body;
   try {
@@ -120,21 +101,20 @@ export const googleCheck = async (req, res) => {
     const { email } = payload;
 
     const user = await User.findOne({ email });
-    if (!user) res.status(200).json({ found: false });
-    else res.status(200).json({ found: true });
+    res.status(200).json({ found: !!user });
   } catch (err) {
-    console.log('Error in googleCheck', err.message);
+    console.error('GoogleCheck error:', err);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-// GOOGLE LOGIN
+// ---------------- GOOGLE LOGIN ----------------
 export const googleLogin = async (req, res) => {
   const { token, publicKey } = req.body;
 
   try {
     const payload = await verifyGoogleToken(token);
-    const { email, name, picture } = payload;
+    const { email, name, picture, sub: googleId } = payload;
 
     let user = await User.findOne({ email });
 
@@ -143,21 +123,20 @@ export const googleLogin = async (req, res) => {
         fullName: name,
         email,
         profilePic: picture,
-        googleId: payload.sub,
+        googleId,
         isVerified: true,
         provider: 'google',
-        publicKey: publicKey || null,
+        publicKey,
       });
     } else {
       user = await User.findByIdAndUpdate(
         user._id,
-        { googleId: payload.sub, isVerified: true, provider: 'google' },
+        { googleId, isVerified: true, provider: 'google' },
         { new: true }
       );
     }
 
     generateToken(user._id, res);
-
     res.status(200).json({
       _id: user._id,
       fullName: user.fullName,
@@ -168,30 +147,24 @@ export const googleLogin = async (req, res) => {
       provider: user.provider,
     });
   } catch (error) {
-    console.log('Error in googleLogin controller', error.message);
+    console.error('GoogleLogin error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-// LOGIN
+// ---------------- LOGIN ----------------
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
-
-    if (!user.isVerified)
-      return res.status(403).json({
-        message: 'Email not verified. Please verify your email first.',
-        requiresOTP: true,
-      });
+    if (!user.isVerified) return res.status(403).json({ message: 'Email not verified', requiresOTP: true });
 
     const isPasswordCorrect = await bcryptjs.compare(password, user.password);
     if (!isPasswordCorrect) return res.status(400).json({ message: 'Invalid credentials' });
 
     generateToken(user._id, res);
-
     res.status(200).json({
       _id: user._id,
       fullName: user.fullName,
@@ -201,100 +174,86 @@ export const login = async (req, res) => {
       isVerified: user.isVerified,
     });
   } catch (error) {
-    console.log('Error in login controller', error.message);
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-// LOGOUT
+// ---------------- LOGOUT ----------------
 export const logout = (req, res) => {
   try {
     res.clearCookie('jwt', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'none',
+      secure: process.env.NODE_ENV !== 'development',
     });
     res.status(200).json({ message: 'Logged out successfully' });
   } catch (error) {
-    console.log('Error in logout controller', error.message);
+    console.error('Logout error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-// UPDATE PROFILE
+// ---------------- UPDATE PROFILE ----------------
 export const updateProfile = async (req, res) => {
   try {
     const { profilePic } = req.body;
-    const userId = req.user._id;
     if (!profilePic) return res.status(400).json({ message: 'Profile pic is required' });
 
     const uploadResponse = await cloudinary.uploader.upload(profilePic);
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { profilePic: uploadResponse.secure_url },
-      { new: true }
-    );
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, { profilePic: uploadResponse.secure_url }, { new: true });
 
     res.status(200).json(updatedUser);
   } catch (error) {
-    console.log('Error in updateProfile:', error.message);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-// CHECK AUTH
-export const checkAuth = (req, res) => {
-  try {
-    res.status(200).json(req.user);
-  } catch (error) {
-    console.log('Error in checkAuth controller', error.message);
+    console.error('UpdateProfile error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-// BLOCK USER
+// ---------------- CHECK AUTH ----------------
+export const checkAuth = (req, res) => {
+  res.status(200).json(req.user);
+};
+
+// ---------------- BLOCK/UNBLOCK USERS ----------------
 export const blockUser = async (req, res) => {
   try {
     const userId = req.user._id;
     const { id: toBlockId } = req.params;
-    if (userId.toString() === toBlockId.toString()) return res.status(400).json({ message: 'Cannot block yourself' });
+
+    if (userId.toString() === toBlockId.toString())
+      return res.status(400).json({ message: 'Cannot block yourself' });
 
     const toBlock = await User.findById(toBlockId);
     if (!toBlock) return res.status(404).json({ message: 'User not found' });
 
     await User.findByIdAndUpdate(userId, { $addToSet: { blockedUsers: toBlockId } });
-
     res.status(200).json({ message: 'User blocked' });
   } catch (error) {
-    console.log('Error in blockUser:', error.message);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('BlockUser error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-// UNBLOCK USER
 export const unblockUser = async (req, res) => {
   try {
     const userId = req.user._id;
     const { id: toUnblockId } = req.params;
 
     await User.findByIdAndUpdate(userId, { $pull: { blockedUsers: toUnblockId } });
-
     res.status(200).json({ message: 'User unblocked' });
   } catch (error) {
-    console.log('Error in unblockUser:', error.message);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('UnblockUser error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-// GET BLOCKED USERS
 export const getBlockedUsers = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const user = await User.findById(userId).populate('blockedUsers', '-password -lastSeen');
+    const user = await User.findById(req.user._id).populate('blockedUsers', '-password -lastSeen');
     res.status(200).json(user.blockedUsers || []);
   } catch (error) {
-    console.log('Error in getBlockedUsers:', error.message);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('GetBlockedUsers error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 };
